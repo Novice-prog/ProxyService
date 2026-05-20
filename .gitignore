@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+app.db
+*.sqlite
+*.sqlite3
+.env
+Frontend/node_modules/
+Frontend/dist/
+Desktop/.venv/
+Desktop/__pycache__/
+Desktop/**/__pycache__/
