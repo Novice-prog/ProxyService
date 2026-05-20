@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.tasks.email import send_activation_key
-from app.tasks.activation_keys import issue_activation_key
-from app.db.deps import get_db
-from app.db.models import Admin, User
-from app.schemas.auth import AccessTokenResponse, MessageResponse, RefreshTokenRequest, TokenResponse, UserLoginRequest, UserRegisterRequest
+from sqlalchemy.orm import Session
+
+from app.core.rate_limit import limiter
 from app.core.security import (
     create_access_token,
     create_admin_access_token,
@@ -17,104 +16,122 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from datetime import datetime, UTC, timedelta
+from app.db.deps import get_db
+from app.db.models import Admin, User
+from app.schemas.auth import (
+    AccessTokenResponse,
+    MessageResponse,
+    RefreshTokenRequest,
+    TokenResponse,
+    UserLoginRequest,
+    UserRegisterRequest,
+)
+from app.tasks.activation_keys import issue_activation_key
+from app.tasks.email import send_activation_key
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-def register(
-        data: UserRegisterRequest,
-        db: Session = Depends(get_db),
-    ):
 
+@router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
+def register(
+    request: Request,
+    data: UserRegisterRequest,
+    db: Session = Depends(get_db),
+):
     if data.password != data.password_confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail = "Password do not match",
+            detail="Password do not match",
         )
-    
+
     existing_user = db.scalar(select(User).where(User.email == data.email))
     if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail = "User with this email already exists"
+            detail="User with this email already exists",
         )
-    
+
     user = User(
-        email = data.email,
-        password_hash = hash_password(data.password),
-        is_active = True,
+        email=data.email,
+        password_hash=hash_password(data.password),
+        is_active=True,
     )
 
     activation_key = issue_activation_key(
-        db = db,
-        user = user,
+        db=db,
+        user=user,
     )
-
 
     db.add(user)
     db.commit()
 
     send_activation_key.delay(
-        email = user.email, 
-        activation_key = activation_key,
+        email=user.email,
+        activation_key=activation_key,
     )
 
     return {
-        "message" : "User registered successfully. Activation key email queued."
+        "message": "User registered successfully. Activation key email queued."
     }
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def login(
-        data: UserLoginRequest,
-        db: Session = Depends(get_db)
-    ):
-
+    request: Request,
+    data: UserLoginRequest,
+    db: Session = Depends(get_db),
+):
     user = db.scalar(
         select(User).where(User.email == data.email)
     )
-    
+
     if user is None or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail = "Invalid email or password"
+            detail="Invalid email or password",
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is inactive"
+            detail="User is inactive",
         )
-    
+
     return {
-        "access_token" : create_access_token(user.id),
-        "refresh_token" : create_refresh_token(user.id),
-        "token_type" : "bearer"
+        "access_token": create_access_token(user.id),
+        "refresh_token": create_refresh_token(user.id),
+        "token_type": "bearer",
     }
+
 
 @router.post("/refresh", response_model=AccessTokenResponse)
-def refresh(data: RefreshTokenRequest):
+@limiter.limit("30/minute")
+def refresh(request: Request, data: RefreshTokenRequest):
     subject = get_token_subject(
         data.refresh_token,
-        expected_type="refresh"
+        expected_type="refresh",
     )
 
-    if subject is None: 
+    if subject is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail = "Invalid refresh token"
+            detail="Invalid refresh token",
         )
-    
-    return{
+
+    return {
         "access_token": create_access_token(subject),
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
 
-@router.post("/token", response_model = TokenResponse)
+
+@router.post("/token", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def swagger_login(
+    request: Request,
     data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     user = db.scalar(
         select(User).where(User.email == data.username)
@@ -140,7 +157,9 @@ def swagger_login(
 
 
 @router.post("/admin/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def admin_login(
+    request: Request,
     data: UserLoginRequest,
     db: Session = Depends(get_db),
 ):
@@ -157,4 +176,3 @@ def admin_login(
         "refresh_token": create_admin_refresh_token(admin.id),
         "token_type": "bearer",
     }
-

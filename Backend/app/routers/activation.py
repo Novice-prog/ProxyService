@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, create_refresh_token
 from app.db.deps import get_db
 from app.db.models import User, VirtualMachine
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/api", tags=["Activation"])
 
 
 @router.post("/activate-key", response_model=ActivationKeyResponse)
+@limiter.limit("10/minute")
 def activate_key(
+    request: Request,
     data: ActivationKeyRequest,
     db: Session = Depends(get_db),
 ):
@@ -35,12 +38,9 @@ def activate_key(
                 detail="Activation key expired",
             )
 
-    # Consume the one-time key before any other writes
     user.activation_key = None
     user.activation_key_expires = None
 
-    # Reuse existing VM if user already has one; otherwise claim a free one.
-    # Both operations happen inside a single transaction with the key clear above.
     vm = db.scalar(
         select(VirtualMachine).where(VirtualMachine.current_user_id == user.id)
     )
@@ -58,7 +58,6 @@ def activate_key(
             vm.current_user_id = user.id
             vm.last_used_at = datetime.now(UTC)
 
-    # Single commit — key consumption + VM assignment are atomic
     db.commit()
 
     proxy = None

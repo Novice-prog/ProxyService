@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://postgres:postgres@localhost:5432/proxy"
 
-    # Required — app refuses to start if not set in .env
+    
     jwt_secret_key: SecretStr = Field(...)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
@@ -20,12 +20,15 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
+    rate_limit_enabled: bool = True
+    rate_limit_global_per_minute: int = 120
+
     admin_email: str | None = None
     admin_password: SecretStr | None = None
 
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
-    # No defaults — must be set in .env to send emails
+    
     smtp_user: str | None = None
     smtp_password: SecretStr | None = None
     smtp_from_email: str | None = None

@@ -1,13 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_active_user
+from app.core.rate_limit import limiter
+from app.core.security import hash_password, verify_password
+from app.db.deps import get_db
+from app.db.models import User
+from app.schemas.user import (
+    ChangePasswordRequest,
+    ChangePasswordResponse,
+    RefreshKeyResponse,
+    UserResponse,
+)
 from app.tasks.activation_keys import issue_activation_key
 from app.tasks.email import send_activation_key
-from app.core.security import hash_password, verify_password
-from app.schemas.user import ChangePasswordRequest, ChangePasswordResponse, RefreshKeyResponse, UserResponse
-from app.core.dependencies import get_current_active_user
-from app.db.models import User
-from app.db.deps import get_db
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
@@ -18,7 +24,9 @@ def get_profile(current_user: User = Depends(get_current_active_user)):
 
 
 @router.post("/refresh-key", response_model=RefreshKeyResponse)
+@limiter.limit("5/minute")
 def refresh_activation_key(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -40,7 +48,9 @@ def refresh_activation_key(
 
 
 @router.post("/change-password", response_model=ChangePasswordResponse)
+@limiter.limit("10/minute")
 def change_password(
+    request: Request,
     data: ChangePasswordRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
