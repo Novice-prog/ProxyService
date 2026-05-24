@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
 
 
 class ActivateKeyDialog(QDialog):
-
     submitted = pyqtSignal(str)
 
     def __init__(self, parent=None) -> None:
@@ -80,8 +79,6 @@ class ActivateKeyDialog(QDialog):
         buttons.addWidget(self.submit_button)
         layout.addLayout(buttons)
 
-    # ---------- API для родителя ----------
-
     def show_error(self, message: str) -> None:
         self.error_label.setText(message)
         self.error_label.show()
@@ -96,8 +93,6 @@ class ActivateKeyDialog(QDialog):
 
     def is_busy(self) -> bool:
         return self.progress.isVisible()
-
-    # ---------- внутренние обработчики ----------
 
     def _on_paste(self) -> None:
         text = QGuiApplication.clipboard().text().strip()
@@ -114,14 +109,12 @@ class ActivateKeyDialog(QDialog):
         self.error_label.hide()
         self.submitted.emit(key)
 
-    def keyPressEvent(self, event) -> None:  # noqa: N802
-        # Esc закрывает только если не идёт запрос
+    def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Escape and self.is_busy():
             return
         super().keyPressEvent(event)
 
-    def closeEvent(self, event) -> None:  # noqa: N802
-        # запрет закрытия крестиком во время запроса
+    def closeEvent(self, event) -> None:
         if self.is_busy():
             event.ignore()
             return

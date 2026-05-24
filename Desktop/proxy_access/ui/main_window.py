@@ -48,16 +48,12 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self._wire_signals()
 
-        # Стартовая отрисовка из локальной сессии (если есть)
         if self.session and self.session.has_tokens:
             self._render_session()
             self._start_status_worker()
         else:
-            # нет сессии → сразу предложить активацию
             self._render_session()
             self._open_activation_dialog()
-
-    # ---------- сборка UI ----------
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -66,11 +62,9 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        # Левая колонка — сайдбар
         self.sidebar = Sidebar()
         root_layout.addWidget(self.sidebar)
 
-        # Центральная колонка — серверы (список VM, в нашем случае одна)
         center = QFrame()
         center.setObjectName("CenterPanel")
         center_layout = QVBoxLayout(center)
@@ -84,7 +78,6 @@ class MainWindow(QMainWindow):
         self.vm_card = VmCard()
         center_layout.addWidget(self.vm_card)
 
-        # Подсказка под карточкой
         self.center_hint = QLabel("")
         self.center_hint.setObjectName("CenterHint")
         self.center_hint.setWordWrap(True)
@@ -94,7 +87,6 @@ class MainWindow(QMainWindow):
         center_layout.addStretch()
         root_layout.addWidget(center, stretch=2)
 
-        # Правая колонка — индикатор статуса
         self.connection_panel = ConnectionPanel()
         root_layout.addWidget(self.connection_panel, stretch=1)
 
@@ -106,11 +98,7 @@ class MainWindow(QMainWindow):
         self.sidebar.reset_clicked.connect(self._on_reset)
         self.connection_panel.toggle_requested.connect(self._on_toggle_requested)
 
-    # ---------- основные сценарии ----------
-
     def _render_session(self) -> None:
-        """Перерисовать центральную и правую колонки по текущему `self.session`."""
-        # Кнопка ВКЛ/ВЫКЛ кликабельна только при наличии активной сессии.
         has_session = bool(self.session and self.session.has_tokens)
         self.connection_panel.set_session_available(has_session)
 
@@ -123,8 +111,6 @@ class MainWindow(QMainWindow):
             self.center_hint.show()
             return
 
-        # Карточка в центре показывает АКТИВИРОВАННЫЙ сервер — тот, что был
-        # выдан при активации ключа. Он не меняется при connect/disconnect.
         is_connected = self.session.is_connected
         self.vm_card.set_vm(
             vm_id=self.session.activated_vm_id,
@@ -142,7 +128,6 @@ class MainWindow(QMainWindow):
         else:
             self.connection_panel.set_status(status="disconnected")
             if self.session.activated_proxy is not None:
-                # есть активированный сервер — подсказка о подключении
                 self.center_hint.setText(
                     "Прокси отключён. Нажмите большой круг справа, чтобы подключиться."
                 )
@@ -152,8 +137,6 @@ class MainWindow(QMainWindow):
                     "Используйте «+» в сайдбаре, чтобы активировать ключ."
                 )
             self.center_hint.show()
-
-    # ---------- активация ключа ----------
 
     def _open_activation_dialog(self) -> None:
         if self._activation_dialog is not None:
@@ -169,9 +152,6 @@ class MainWindow(QMainWindow):
 
     def _submit_activation(self, dialog: ActivateKeyDialog, key: str) -> None:
         dialog.set_busy(True)
-
-        # сбрасываем токены — активация по ключу не требует и не должна
-        # использовать старые
         self.client.configure(api_url_from_env(), access_token="", refresh_token="")
 
         def task() -> dict:
@@ -214,14 +194,7 @@ class MainWindow(QMainWindow):
     def _on_activation_dialog_closed(self) -> None:
         self._activation_dialog = None
 
-    # ---------- connect / disconnect (клик по круглой кнопке) ----------
-
     def _on_toggle_requested(self, wants_connect: bool) -> None:
-        """Клик по большому круглому индикатору.
-
-        wants_connect=True  → POST /api/connect   (взять VM из пула)
-        wants_connect=False → POST /api/disconnect (освободить VM)
-        """
         if not self.session or not self.session.has_tokens:
             return
         if self.toggle_worker is not None and self.toggle_worker.isRunning():
@@ -251,7 +224,7 @@ class MainWindow(QMainWindow):
     def _on_toggle_success(self, wanted_connect: bool, payload: object) -> None:
         if not self.session:
             return
-        # Токены могли быть рефрешнуты внутри ApiClient — сохраним.
+
         self._sync_session_tokens()
 
         if not isinstance(payload, dict):
@@ -263,9 +236,6 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # Обновляем ТОЛЬКО текущую proxy/vm_id из ответа сервера.
-        # `activated_proxy`/`activated_vm_id` остаются неизменными — это
-        # «сервер из активации», он фиксируется один раз.
         self.session.proxy = self._proxy_from_payload(payload.get("proxy"))
         self.session.vm_id = payload.get("vm_id")
 
@@ -276,12 +246,10 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Успешное {action}", 3000)
 
     def _on_toggle_failed(self, wanted_connect: bool, error: object) -> None:
-        # 401 → сессия истекла, кидаем юзера на активацию
         if isinstance(error, ApiError) and error.status_code == 401:
             self._handle_session_expired(str(error))
             return
 
-        # 503 при попытке подключения = «нет свободных» — отдельный визуал.
         if (
             wanted_connect
             and isinstance(error, ApiError)
@@ -296,7 +264,6 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Свободных прокси нет", 4000)
             return
 
-        # Прочие ошибки — error со строкой
         self.connection_panel.set_status(
             status="error",
             vm_id=self.session.vm_id if self.session else None,
@@ -309,12 +276,6 @@ class MainWindow(QMainWindow):
         self.toggle_worker = None
 
     def _sync_session_tokens(self) -> None:
-        """Синхронизирует self.session.access/refresh с тем, что у self.client.
-
-        ApiClient может рефрешнуть access_token при 401 — этот свежий
-        токен надо сохранить в session.json, иначе после перезапуска
-        приложения мы пойдём со старым.
-        """
         if not self.session:
             return
         access, refresh = self.client.export_tokens()
@@ -322,8 +283,6 @@ class MainWindow(QMainWindow):
             self.session.access_token = access
             self.session.refresh_token = refresh
             save_session(self.session)
-
-    # ---------- мониторинг статуса (WebSocket) ----------
 
     def _start_status_worker(self) -> None:
         if not self.session or not self.session.has_tokens:
@@ -352,8 +311,6 @@ class MainWindow(QMainWindow):
         message = payload.get("message") or payload.get("detail")
 
         if status == "connected" and proxy:
-            # WebSocket — единственный источник правды о текущем подключении.
-            # Обновляем только `proxy` / `vm_id`; `activated_*` не трогаем.
             changed = (
                 self.session.proxy is None
                 or self.session.proxy.connection_line != proxy.connection_line
@@ -367,8 +324,6 @@ class MainWindow(QMainWindow):
                 vm_id=self.session.vm_id,
                 proxy=proxy,
             )
-            # Карточка по-прежнему показывает «активированный» сервер —
-            # is_connected даёт зелёный кружок, если сейчас юзер подключён.
             self.vm_card.set_vm(
                 vm_id=self.session.activated_vm_id,
                 proxy=self.session.activated_proxy,
@@ -378,11 +333,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Подключение активно", 3000)
             return
 
-        # disconnected / no_free_vms / error
         if status in {"no_free_vms", "error"}:
-            # Не сбрасываем proxy в session: возможно временно.
-            # Пробрасываем текущую VM, чтобы юзер видел host:port даже
-            # при временном сбое мониторинга.
             self.connection_panel.set_status(
                 status=status,
                 vm_id=self.session.vm_id,
@@ -391,8 +342,6 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # status == "disconnected" — сервер сообщил, что VM освобождена.
-        # Карточку оставляем — показывает активированный сервер.
         if self.session.is_connected:
             self.session.proxy = None
             self.session.vm_id = None
@@ -412,8 +361,6 @@ class MainWindow(QMainWindow):
         self.center_hint.show()
 
     def _on_status_error(self, message: str) -> None:
-        # Сетевые сбои WS — показываем error, но сохраняем VM info из session,
-        # чтобы host:port остался виден.
         vm_id = self.session.vm_id if self.session else None
         proxy = self.session.proxy if self.session else None
         self.connection_panel.set_status(
@@ -432,8 +379,6 @@ class MainWindow(QMainWindow):
         self.session.access_token = access_token
         self.session.refresh_token = refresh_token
         save_session(self.session)
-
-    # ---------- сброс / выход ----------
 
     def _on_reset(self) -> None:
         answer = QMessageBox.question(
@@ -461,8 +406,6 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Сессия завершена: {message}", 6000)
         self._open_activation_dialog()
 
-    # ---------- утилиты ----------
-
     def _sync_client_from_session(self) -> None:
         if not self.session:
             return
@@ -485,13 +428,6 @@ class MainWindow(QMainWindow):
             return None
 
     def _session_from_activation(self, payload: dict) -> Session:
-        """Создаёт новую Session из ответа /api/activate-key.
-
-        Это ЕДИНСТВЕННОЕ место, где записываются `activated_proxy` и
-        `activated_vm_id` — «сервер, который пользователь активировал».
-        Дальше эти поля остаются неизменными, пока юзер не активирует
-        новый ключ (тогда сюда придёт новая VM из payload).
-        """
         proxy = self._proxy_from_payload(payload.get("proxy"))
         vm_id = payload.get("vm_id")
         return Session(
@@ -505,6 +441,6 @@ class MainWindow(QMainWindow):
             activated_vm_id=vm_id,
         )
 
-    def closeEvent(self, event) -> None:  # noqa: N802
+    def closeEvent(self, event) -> None:
         self._stop_status_worker()
         super().closeEvent(event)

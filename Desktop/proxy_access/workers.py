@@ -22,7 +22,7 @@ class ApiWorker(QThread):
         try:
             payload = self.task()
             self.succeeded.emit(payload)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self.failed.emit(exc)
 
 
@@ -42,16 +42,12 @@ class StatusWorker(QThread):
         self._running = False
 
     def run(self) -> None:
-        # Импорт через `from` — если установлен не тот пакет `websocket`
-        # (вместо `websocket-client`), здесь сразу будет ImportError с
-        # понятным сообщением, а не AttributeError на каждой итерации.
         try:
             from websocket import create_connection, WebSocketTimeoutException
         except ImportError as exc:
             self.connection_error.emit(
                 "Не найден пакет websocket-client. "
-                "Запустите: pip install -r requirements.txt "
-                f"(подробности: {exc})"
+                f"Запустите: pip install -r requirements.txt ({exc})"
             )
             return
 
@@ -95,16 +91,7 @@ class StatusWorker(QThread):
                     break
                 self.connection_error.emit(str(exc))
                 time.sleep(self.reconnect_delay)
-            except AttributeError as exc:
-                # Конкретный случай: установлен заброшенный пакет `websocket`
-                # вместо `websocket-client`. Без явного сообщения юзер не поймёт.
-                self.connection_error.emit(
-                    "Конфликт пакетов: похоже, установлен старый пакет 'websocket'. "
-                    "Выполните: pip uninstall -y websocket && pip install websocket-client "
-                    f"(детали: {exc})"
-                )
-                return
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 if self._running:
                     self.connection_error.emit(str(exc))
                     time.sleep(self.reconnect_delay)

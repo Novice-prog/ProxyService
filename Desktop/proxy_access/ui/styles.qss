@@ -1,17 +1,3 @@
-/* === Палитра ===
-   bg-base       #0e0f1a   глубокий фон
-   bg-elevated   #181a2a   карточки/панели
-   bg-soft       #20223a   ховеры
-   accent        #6c5ce7   фиолетовый акцент (как у Happ)
-   accent-soft   #7d6df1
-   success       #4cd17c
-   warning       #ffb547
-   danger        #ff5a6f
-   text          #e6e7ee
-   text-muted    #8a8da3
-   border        rgba(255,255,255,0.06)
-*/
-
 QMainWindow,
 #Root {
     background-color: #0e0f1a;
@@ -24,7 +10,6 @@ QStatusBar {
     font-size: 11px;
 }
 
-/* ===== Sidebar ===== */
 #Sidebar {
     background-color: #14152a;
     border-right: 1px solid rgba(255, 255, 255, 0.04);
@@ -54,7 +39,6 @@ QStatusBar {
     border: 1px solid rgba(108, 92, 231, 0.4);
 }
 
-/* ===== Центральная панель ===== */
 #CenterPanel {
     background-color: #0e0f1a;
 }
@@ -75,7 +59,6 @@ QStatusBar {
     border-radius: 10px;
 }
 
-/* ===== Карточка VM ===== */
 #VmCard {
     background-color: #181a2a;
     border: 1px solid rgba(255, 255, 255, 0.04);
@@ -97,7 +80,6 @@ QStatusBar {
     border-radius: 5px;
 }
 
-/* «idle» — VM известна, но сейчас не подключена (после disconnect) */
 #VmCard[state="idle"] #VmDot {
     background-color: #8a8da3;
 }
@@ -126,17 +108,15 @@ QStatusBar {
     border-radius: 6px;
 }
 
-/* ===== Правая панель — индикатор статуса ===== */
 #ConnectionPanel {
     background-color: #14152a;
     border-left: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Большой круглый «оrb» */
 #StatusOrb {
     background-color: #181a2a;
     border: 2px solid rgba(255, 255, 255, 0.06);
-    border-radius: 110px;  /* половина от 220 — идеальный круг */
+    border-radius: 110px;
     color: #3a3d5a;
     font-size: 64px;
     font-weight: 300;
@@ -172,17 +152,12 @@ QStatusBar {
     color: #6c5ce7;
 }
 
-/* hover/pressed — только когда кнопка enabled */
 #StatusOrb:enabled:hover {
     border-width: 3px;
 }
 
 #StatusOrb:enabled:pressed {
     background-color: #20223a;
-}
-
-#StatusOrb:disabled {
-    /* без hover-эффекта, чтобы не казалось кликабельной */
 }
 
 #StatusLabel {
@@ -216,7 +191,6 @@ QStatusBar {
     font-family: "Consolas", "Courier New", monospace;
 }
 
-/* ===== Диалог активации ===== */
 QDialog {
     background-color: #181a2a;
 }
@@ -268,7 +242,6 @@ QProgressBar::chunk {
     border-radius: 3px;
 }
 
-/* ===== Кнопки общие ===== */
 QPushButton {
     background-color: transparent;
     color: #e6e7ee;
@@ -325,7 +298,6 @@ QPushButton {
     color: #e6e7ee;
 }
 
-/* ===== QMessageBox ===== */
 QMessageBox {
     background-color: #181a2a;
     color: #e6e7ee;
@@ -348,7 +320,6 @@ QMessageBox QPushButton:hover {
     background-color: #2a2c4a;
 }
 
-/* ===== Scrollbar (мягкий) ===== */
 QScrollBar:vertical {
     background-color: transparent;
     width: 8px;

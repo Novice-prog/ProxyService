@@ -27,30 +27,17 @@ STATUS_HINTS = {
     "loading": "Связываемся с сервером…",
 }
 
-# В каких состояниях клик имеет смысл (нет смысла в error/loading/нет сессии)
 CLICKABLE_STATES = {"connected", "disconnected", "no_free_vms"}
 
 
 class ConnectionPanel(QFrame):
-    """Правая колонка — большой круглый индикатор статуса.
-
-    Кликабельна в состояниях connected/disconnected/no_free_vms:
-    - connected → emit toggle_requested(False)  (отключение)
-    - disconnected/no_free_vms → emit toggle_requested(True) (подключение)
-
-    В состояниях error/loading или когда сессии нет — disabled.
-    """
-
-    # True = пользователь хочет подключиться, False = отключиться
     toggle_requested = pyqtSignal(bool)
 
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("ConnectionPanel")
 
-        # Текущее состояние, чтобы при клике знать что emit'ить
         self._current_state: str = "disconnected"
-        # Доступна ли вообще сессия (без сессии кнопку нельзя нажимать)
         self._session_available: bool = False
 
         layout = QVBoxLayout(self)
@@ -58,7 +45,6 @@ class ConnectionPanel(QFrame):
         layout.setSpacing(18)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Круглая кнопка — теперь полноценный QPushButton с обработкой клика
         self.status_button = QPushButton("On/Off")
         self.status_button.setObjectName("StatusOrb")
         self.status_button.setFixedSize(220, 220)
@@ -105,10 +91,7 @@ class ConnectionPanel(QFrame):
 
         self._refresh_clickability()
 
-    # ---------- API ----------
-
     def set_session_available(self, available: bool) -> None:
-        """Когда нет сессии (нет токенов) — кнопка disabled независимо от статуса."""
         self._session_available = available
         self._refresh_clickability()
 
@@ -130,23 +113,17 @@ class ConnectionPanel(QFrame):
         self.status_label.setText(STATUS_LABELS[state])
         self.hint_label.setText(custom_message or STATUS_HINTS[state])
 
-        # Показываем VM info, если она передана — даже при error/no_free_vms.
-        # Только при `disconnected` явно сбрасываем — это значит VM реально снята.
         if proxy is not None:
             self.vm_label.setText(f"VM #{vm_id}" if vm_id else "—")
             self.endpoint_label.setText(f"{proxy.protocol.upper()} · {proxy.host}:{proxy.port}")
         elif state == "disconnected":
             self.vm_label.setText("—")
             self.endpoint_label.setText("—")
-        # для error/no_free_vms/loading без proxy — оставляем то, что было раньше
 
         self._refresh_clickability()
 
     def show_loading(self, message: str | None = None) -> None:
-        """Промежуточное состояние во время API-запроса."""
         self.set_status(status="loading", custom_message=message)
-
-    # ---------- внутреннее ----------
 
     def _refresh_clickability(self) -> None:
         clickable = (
@@ -161,6 +138,5 @@ class ConnectionPanel(QFrame):
         )
 
     def _on_clicked(self) -> None:
-        # connected → хотим отключиться. Иначе → хотим подключиться.
         wants_connect = self._current_state != "connected"
         self.toggle_requested.emit(wants_connect)

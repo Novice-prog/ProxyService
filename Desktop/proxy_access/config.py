@@ -31,14 +31,8 @@ class Session:
     user_id: int
     access_token: str = ""
     refresh_token: str = ""
-    # Текущая VM — есть только когда пользователь реально подключён к прокси.
-    # Меняется при /api/connect и /api/disconnect, а также по WS-апдейтам.
     proxy: ProxyInfo | None = None
     vm_id: int | None = None
-    # «Активированный» сервер — фиксируется в момент успешной активации
-    # ключа через /api/activate-key и НЕ меняется при последующих
-    # connect/disconnect. Это то, что юзер «себе добавил», и что показывается
-    # в списке серверов слева.
     activated_proxy: ProxyInfo | None = None
     activated_vm_id: int | None = None
 
@@ -57,12 +51,6 @@ class Session:
         return self.proxy.connection_line
 
     def remember_activated_vm(self, proxy: ProxyInfo | None, vm_id: int | None) -> None:
-        """Записать сервер как «активированный».
-
-        Вызывается ОДИН раз — при успешной активации ключа. Дальше эти поля
-        читаются для отображения карточки в списке серверов и больше нигде
-        не обновляются (даже если /api/connect выдаст другую VM).
-        """
         if proxy is not None and vm_id is not None:
             self.activated_proxy = proxy
             self.activated_vm_id = vm_id
@@ -84,12 +72,6 @@ class Session:
         proxy_raw = data.get("proxy")
         proxy = ProxyInfo(**proxy_raw) if proxy_raw else None
 
-        # Миграция со старой схемы:
-        # 1) activated_proxy → читаем напрямую (новый формат)
-        # 2) last_proxy → читаем как fallback (промежуточная схема)
-        # 3) если ни того, ни другого нет, но есть текущая proxy —
-        #    считаем её активированной (юзер активировался в старой версии,
-        #    в session.json лежит только proxy/vm_id)
         activated_raw = (
             data.get("activated_proxy")
             or data.get("last_proxy")
