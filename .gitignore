@@ -2,12 +2,31 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# DB
 app.db
 *.sqlite
 *.sqlite3
+
+# Secrets
 .env
+
+# Frontend
 Frontend/node_modules/
 Frontend/dist/
+
+# Desktop
 Desktop/.venv/
 Desktop/__pycache__/
 Desktop/**/__pycache__/
+Desktop/build/
+Desktop/dist/
+Desktop/*.spec
+Desktop/.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

@@ -133,12 +133,23 @@ start http://localhost:5173
 | `http://localhost:8000/docs` | OpenAPI / Swagger UI |
 | `http://localhost:8000/redoc` | ReDoc |
 
-### Локальный запуск без Docker
+---
 
-См. README в каждой подпапке:
-- [Backend/README.md](Backend/README.md)
-- [Frontend/README.md](Frontend/README.md)
-- [Desktop/README.md](Desktop/README.md)
+## Desktop-клиент
+
+Десктоп распространяется как готовый `.exe` для Windows — Python и venv ставить не нужно.
+
+**Скачать:** [Releases](../../releases/latest) → `ProxyAccess.exe`
+
+Запуск: двойной клик. При первом запуске Windows может показать SmartScreen-предупреждение «Windows protected your PC» (норма для неподписанных приложений) — нажмите `More info` → `Run anyway`.
+
+Адрес backend по умолчанию — `http://127.0.0.1:8000`. Изменить можно через переменную `PROXY_ACCESS_API_URL` или файл `.env` рядом с `.exe`:
+
+```env
+PROXY_ACCESS_API_URL=http://your-backend:8000
+```
+
+Для разработки (запуск из исходников) — см. [Desktop/README.md](Desktop/README.md).
 
 ---
 
@@ -171,13 +182,13 @@ start http://localhost:5173
 │   ├── Dockerfile                 multi-stage build (node → nginx)
 │   └── package.json
 │
-├── Desktop/                       PyQt6 клиент
+├── Desktop/                       PyQt6 клиент (бинарный .exe — в Releases)
 │   ├── proxy_access/
 │   │   ├── ui/                    main_window, sidebar, vm_card, connection_panel, activate_dialog
 │   │   ├── api.py                 httpx-клиент к backend
 │   │   ├── workers.py             QThread воркеры (API + WebSocket)
 │   │   └── config.py              Session, dotenv
-│   ├── run.ps1                    запуск (создаст venv при необходимости)
+│   ├── run.ps1                    запуск из исходников (создаст venv)
 │   └── requirements.txt
 │
 ├── docker-compose.yml             5 сервисов: backend, frontend, postgres, redis, celery-worker
@@ -270,7 +281,7 @@ pytest -v
 Покрыто:
 
 - Auth: register (success/duplicate/no_free_vms/inactive_vms), login, refresh, admin login
-- Activation: success, invalid key, expired, no_free_vms (с проверкой что ключ **не** потребился при ошибке)
+- Activation: success, invalid key, expired, no_free_vms
 - Profile: get, refresh-key (success / no_free_vms / уже есть VM)
 - WebSocket: все 4 статуса (connected, disconnected, no_free_vms, error), отказ при невалидном токене
 - Security, health
@@ -301,10 +312,3 @@ docker compose down -v
 
 ---
 
-## Подробная документация
-
-- **[Backend](Backend/README.md)** — API endpoints, схемы данных, тесты, безопасность
-- **[Frontend](Frontend/README.md)** — структура Vue-приложения, routing, env
-- **[Desktop](Desktop/README.md)** — установка, запуск, сборка `.exe`
-
----
