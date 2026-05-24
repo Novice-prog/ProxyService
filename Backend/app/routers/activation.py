@@ -38,9 +38,6 @@ def activate_key(
                 detail="Activation key expired",
             )
 
-    user.activation_key = None
-    user.activation_key_expires = None
-
     vm = db.scalar(
         select(VirtualMachine).where(VirtualMachine.current_user_id == user.id)
     )
@@ -54,28 +51,30 @@ def activate_key(
             .order_by(VirtualMachine.id)
             .with_for_update(skip_locked=True)
         )
-        if vm is not None:
-            vm.current_user_id = user.id
-            vm.last_used_at = datetime.now(UTC)
+        if vm is None:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="All proxies are busy",
+            )
+        vm.current_user_id = user.id
+        vm.last_used_at = datetime.now(UTC)
+
+    user.activation_key = None
+    user.activation_key_expires = None
 
     db.commit()
-
-    proxy = None
-    vm_id = None
-    if vm is not None:
-        db.refresh(vm)
-        vm_id = vm.id
-        proxy = ProxyConnectionResponse(
-            host=vm.host,
-            port=vm.port,
-            protocol=vm.protocol,
-        )
+    db.refresh(vm)
 
     return ActivationKeyResponse(
         status="activated",
         user_id=user.id,
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
-        vm_id=vm_id,
-        proxy=proxy,
+        vm_id=vm.id,
+        proxy=ProxyConnectionResponse(
+            host=vm.host,
+            port=vm.port,
+            protocol=vm.protocol,
+        ),
     )

@@ -25,7 +25,11 @@
           {{ error }}
         </v-alert>
 
-        <v-form class="auth-form" @submit.prevent="submit">
+        <v-alert v-if="success" type="success" variant="tonal" class="mb-4">
+          {{ success }}
+        </v-alert>
+
+        <v-form v-if="!success" class="auth-form" @submit.prevent="submit">
           <div class="field-block">
             <label class="field-label" for="register-email">Email</label>
             <v-text-field
@@ -65,7 +69,7 @@
               v-model="passwordConfirm"
               type="password"
               autocomplete="new-password"
-              prepend-inner-icon="mdi-key-change"
+              prepend-inner-icon="mdi-lock-outline"
               variant="outlined"
               density="comfortable"
               hide-details="auto"
@@ -86,6 +90,18 @@
             Зарегистрироваться
           </v-btn>
         </v-form>
+
+        <v-btn
+          v-if="success"
+          color="primary"
+          block
+          size="large"
+          class="primary-action"
+          append-icon="mdi-login"
+          @click="goToLogin"
+        >
+          Перейти ко входу
+        </v-btn>
       </v-card-text>
     </v-card>
   </div>
@@ -103,28 +119,31 @@ const password = ref('')
 const passwordConfirm = ref('')
 const loading = ref(false)
 const error = ref('')
+const success = ref('')
 
 async function submit() {
   error.value = ''
+  success.value = ''
   loading.value = true
 
-  const credentials = {
-    email: email.value,
-    password: password.value,
-    password_confirm: passwordConfirm.value,
-  }
-
   try {
-    await api.register(credentials)
-    await api.login({
-      email: credentials.email,
-      password: credentials.password,
+    await api.register({
+      email: email.value,
+      password: password.value,
+      password_confirm: passwordConfirm.value,
     })
-    router.push('/profile')
+    success.value = 'Письмо с ключом отправлено на почту'
+    email.value = ''
+    password.value = ''
+    passwordConfirm.value = ''
   } catch (err) {
     error.value = err.message
   } finally {
     loading.value = false
   }
+}
+
+function goToLogin() {
+  router.push('/login')
 }
 </script>

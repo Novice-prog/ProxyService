@@ -26,6 +26,7 @@ from app.schemas.auth import (
     UserLoginRequest,
     UserRegisterRequest,
 )
+from app.services.vm_pool import ensure_free_vm_or_503
 from app.tasks.activation_keys import issue_activation_key
 from app.tasks.email import send_activation_key
 
@@ -51,6 +52,8 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exists",
         )
+
+    ensure_free_vm_or_503(db)
 
     user = User(
         email=data.email,

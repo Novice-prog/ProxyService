@@ -1,0 +1,7 @@
+# Согласованные версии — иначе на Windows возможна ошибка "No module named PyQt6.sip"
+PyQt6==6.7.1
+PyQt6-Qt6==6.7.3
+PyQt6-sip==13.8.0
+httpx>=0.28.0
+websocket-client>=1.8.0
+python-dotenv>=1.0.0

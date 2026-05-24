@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_active_user
 from app.core.rate_limit import limiter
 from app.core.security import hash_password, verify_password
 from app.db.deps import get_db
-from app.db.models import User
+from app.db.models import User, VirtualMachine
 from app.schemas.user import (
     ChangePasswordRequest,
     ChangePasswordResponse,
     RefreshKeyResponse,
     UserResponse,
 )
+from app.services.vm_pool import ensure_free_vm_or_503
 from app.tasks.activation_keys import issue_activation_key
 from app.tasks.email import send_activation_key
 
@@ -30,6 +32,13 @@ def refresh_activation_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+
+    assigned_vm = db.scalar(
+        select(VirtualMachine).where(VirtualMachine.current_user_id == current_user.id)
+    )
+    if assigned_vm is None:
+        ensure_free_vm_or_503(db)
+
     activation_key = issue_activation_key(db=db, user=current_user)
 
     db.commit()

@@ -1,0 +1,375 @@
+/* === Палитра ===
+   bg-base       #0e0f1a   глубокий фон
+   bg-elevated   #181a2a   карточки/панели
+   bg-soft       #20223a   ховеры
+   accent        #6c5ce7   фиолетовый акцент (как у Happ)
+   accent-soft   #7d6df1
+   success       #4cd17c
+   warning       #ffb547
+   danger        #ff5a6f
+   text          #e6e7ee
+   text-muted    #8a8da3
+   border        rgba(255,255,255,0.06)
+*/
+
+QMainWindow,
+#Root {
+    background-color: #0e0f1a;
+}
+
+QStatusBar {
+    background-color: #0e0f1a;
+    color: #8a8da3;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 11px;
+}
+
+/* ===== Sidebar ===== */
+#Sidebar {
+    background-color: #14152a;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+#SidebarButton {
+    background-color: transparent;
+    color: #8a8da3;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+#SidebarButton:hover {
+    background-color: #20223a;
+    color: #e6e7ee;
+}
+
+#SidebarButton:pressed {
+    background-color: #2a2c4a;
+}
+
+#SidebarButton[active="true"] {
+    background-color: #20223a;
+    color: #6c5ce7;
+    border: 1px solid rgba(108, 92, 231, 0.4);
+}
+
+/* ===== Центральная панель ===== */
+#CenterPanel {
+    background-color: #0e0f1a;
+}
+
+#CenterTitle {
+    color: #e6e7ee;
+    font-size: 28px;
+    font-weight: 600;
+    padding-bottom: 4px;
+}
+
+#CenterHint {
+    color: #8a8da3;
+    font-size: 13px;
+    padding: 12px 14px;
+    background-color: #181a2a;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+
+/* ===== Карточка VM ===== */
+#VmCard {
+    background-color: #181a2a;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+}
+
+#VmCard[selected="true"] {
+    border: 1px solid rgba(108, 92, 231, 0.45);
+    background-color: #1c1e36;
+}
+
+#VmCard[state="empty"] {
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    background-color: #14152a;
+}
+
+#VmDot {
+    background-color: #4cd17c;
+    border-radius: 5px;
+}
+
+/* «idle» — VM известна, но сейчас не подключена (после disconnect) */
+#VmCard[state="idle"] #VmDot {
+    background-color: #8a8da3;
+}
+
+#VmCard[state="empty"] #VmDot {
+    background-color: #3a3d5a;
+}
+
+#VmTitle {
+    color: #e6e7ee;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#VmSubtitle {
+    color: #8a8da3;
+    font-size: 12px;
+}
+
+#VmRegion {
+    color: #8a8da3;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background-color: #20223a;
+    border-radius: 6px;
+}
+
+/* ===== Правая панель — индикатор статуса ===== */
+#ConnectionPanel {
+    background-color: #14152a;
+    border-left: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Большой круглый «оrb» */
+#StatusOrb {
+    background-color: #181a2a;
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-radius: 110px;  /* половина от 220 — идеальный круг */
+    color: #3a3d5a;
+    font-size: 64px;
+    font-weight: 300;
+}
+
+#StatusOrb[state="connected"] {
+    background-color: rgba(76, 209, 124, 0.08);
+    border: 2px solid rgba(76, 209, 124, 0.55);
+    color: #4cd17c;
+}
+
+#StatusOrb[state="disconnected"] {
+    background-color: #181a2a;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    color: #3a3d5a;
+}
+
+#StatusOrb[state="no_free_vms"] {
+    background-color: rgba(255, 181, 71, 0.08);
+    border: 2px solid rgba(255, 181, 71, 0.55);
+    color: #ffb547;
+}
+
+#StatusOrb[state="error"] {
+    background-color: rgba(255, 90, 111, 0.08);
+    border: 2px solid rgba(255, 90, 111, 0.55);
+    color: #ff5a6f;
+}
+
+#StatusOrb[state="loading"] {
+    background-color: #181a2a;
+    border: 2px solid rgba(108, 92, 231, 0.55);
+    color: #6c5ce7;
+}
+
+/* hover/pressed — только когда кнопка enabled */
+#StatusOrb:enabled:hover {
+    border-width: 3px;
+}
+
+#StatusOrb:enabled:pressed {
+    background-color: #20223a;
+}
+
+#StatusOrb:disabled {
+    /* без hover-эффекта, чтобы не казалось кликабельной */
+}
+
+#StatusLabel {
+    color: #e6e7ee;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+#StatusHint {
+    color: #8a8da3;
+    font-size: 12px;
+    padding: 0 12px;
+}
+
+#ConnectionInfo {
+    background-color: #181a2a;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+
+#ConnectionVm {
+    color: #e6e7ee;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#ConnectionEndpoint {
+    color: #8a8da3;
+    font-size: 11px;
+    font-family: "Consolas", "Courier New", monospace;
+}
+
+/* ===== Диалог активации ===== */
+QDialog {
+    background-color: #181a2a;
+}
+
+#DialogTitle {
+    color: #e6e7ee;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#DialogHint {
+    color: #8a8da3;
+    font-size: 12px;
+}
+
+#DialogError {
+    color: #ff5a6f;
+    font-size: 12px;
+    padding: 8px 12px;
+    background-color: rgba(255, 90, 111, 0.08);
+    border: 1px solid rgba(255, 90, 111, 0.35);
+    border-radius: 8px;
+}
+
+#KeyInput {
+    background-color: #0e0f1a;
+    color: #e6e7ee;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: "Consolas", "Courier New", monospace;
+    selection-background-color: #6c5ce7;
+}
+
+#KeyInput:focus {
+    border: 1px solid #6c5ce7;
+}
+
+QProgressBar {
+    background-color: #20223a;
+    border: none;
+    border-radius: 3px;
+    max-height: 4px;
+}
+
+QProgressBar::chunk {
+    background-color: #6c5ce7;
+    border-radius: 3px;
+}
+
+/* ===== Кнопки общие ===== */
+QPushButton {
+    background-color: transparent;
+    color: #e6e7ee;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+}
+
+#PrimaryButton {
+    background-color: #6c5ce7;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#PrimaryButton:hover {
+    background-color: #7d6df1;
+}
+
+#PrimaryButton:pressed {
+    background-color: #5b4ed1;
+}
+
+#PrimaryButton:disabled {
+    background-color: #2a2c4a;
+    color: #5a5d75;
+}
+
+#SecondaryButton {
+    background-color: #20223a;
+    color: #e6e7ee;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#SecondaryButton:hover {
+    background-color: #2a2c4a;
+}
+
+#SecondaryButton:pressed {
+    background-color: #181a2a;
+}
+
+#SecondaryButton:disabled {
+    color: #5a5d75;
+}
+
+#GhostButton {
+    background-color: transparent;
+    color: #8a8da3;
+}
+
+#GhostButton:hover {
+    background-color: #20223a;
+    color: #e6e7ee;
+}
+
+/* ===== QMessageBox ===== */
+QMessageBox {
+    background-color: #181a2a;
+    color: #e6e7ee;
+}
+
+QMessageBox QLabel {
+    color: #e6e7ee;
+}
+
+QMessageBox QPushButton {
+    background-color: #20223a;
+    color: #e6e7ee;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 6px 14px;
+    min-width: 80px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #2a2c4a;
+}
+
+/* ===== Scrollbar (мягкий) ===== */
+QScrollBar:vertical {
+    background-color: transparent;
+    width: 8px;
+    margin: 4px 2px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    height: 0;
+}

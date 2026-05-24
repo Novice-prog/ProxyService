@@ -61,9 +61,13 @@
                   <strong>{{ formatDate(user.activation_key_expires) }}</strong>
                 </div>
                 <div class="info-tile wide key-tile">
-                  <v-icon icon="mdi-key-variant" />
-                  <span>Текущий ключ</span>
-                  <strong>{{ user.activation_key ?? 'Ключ скрыт или уже использован' }}</strong>
+                  <v-icon icon="mdi-email-check-outline" />
+                  <span>Ключ активации</span>
+                  <strong>
+                    {{ user.has_pending_activation_key
+                        ? 'Отправлен на email'
+                        : 'Не запрошен или уже использован' }}
+                  </strong>
                 </div>
               </div>
 
@@ -129,7 +133,7 @@
                     class="app-field"
                     type="password"
                     autocomplete="new-password"
-                    prepend-inner-icon="mdi-key-plus"
+                    prepend-inner-icon="mdi-lock-plus-outline"
                     variant="outlined"
                     density="comfortable"
                     hide-details="auto"
@@ -145,7 +149,7 @@
                     class="app-field"
                     type="password"
                     autocomplete="new-password"
-                    prepend-inner-icon="mdi-key-check"
+                    prepend-inner-icon="mdi-lock-check-outline"
                     variant="outlined"
                     density="comfortable"
                     hide-details="auto"
@@ -205,7 +209,7 @@ async function loadProfile() {
 
 async function refreshKey() {
   error.value = ''
-  success.value = ''
+  success.value = 'Новый ключ отправлен на ваш email. Старый ключ больше не действителен.'
   refreshingKey.value = true
 
   try {

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import anyio
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -8,28 +9,48 @@ from app.core.security import get_token_subject
 from app.db.database import SessionLocal
 from app.db.models import VirtualMachine
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["WebSocket"])
 
 
 def _fetch_vm_status(user_id: int) -> dict:
-    """Synchronous DB query — called via anyio.to_thread to avoid blocking the event loop."""
+    
     with SessionLocal() as db:
         vm = db.scalar(
-            select(VirtualMachine).where(VirtualMachine.current_user_id == user_id)
+            select(VirtualMachine).where(
+                VirtualMachine.current_user_id == user_id,
+                VirtualMachine.is_active.is_(True),
+            )
         )
-        if vm is None:
+        if vm is not None:
             return {
-                "status": "disconnected",
-                "message": "User has no active proxy connection",
+                "status": "connected",
+                "message": "User is connected to proxy",
+                "proxy": {
+                    "host": vm.host,
+                    "port": vm.port,
+                    "protocol": vm.protocol,
+                },
             }
+
+        free_vm_exists = db.scalar(
+            select(VirtualMachine.id)
+            .where(
+                VirtualMachine.is_active.is_(True),
+                VirtualMachine.current_user_id.is_(None),
+            )
+            .limit(1)
+        )
+        if free_vm_exists is None:
+            return {
+                "status": "no_free_vms",
+                "message": "All proxies are busy",
+            }
+
         return {
-            "status": "connected",
-            "message": "User is connected to proxy",
-            "proxy": {
-                "host": vm.host,
-                "port": vm.port,
-                "protocol": vm.protocol,
-            },
+            "status": "disconnected",
+            "message": "User has no active proxy connection",
         }
 
 
@@ -48,7 +69,15 @@ async def connection_status(
 
     try:
         while True:
-            payload = await anyio.to_thread.run_sync(_fetch_vm_status, user_id)
+            try:
+                payload = await anyio.to_thread.run_sync(_fetch_vm_status, user_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Failed to fetch VM status for user_id=%s", user_id)
+                payload = {
+                    "status": "error",
+                    "message": "Failed to fetch connection status",
+                    "detail": str(exc),
+                }
             await websocket.send_json(payload)
             await asyncio.sleep(3)
     except WebSocketDisconnect:

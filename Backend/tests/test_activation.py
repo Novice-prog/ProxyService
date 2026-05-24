@@ -44,3 +44,26 @@ def test_activate_key_invalid(client):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid activation key"
+
+
+def test_activate_key_no_free_vm(client, db_session):
+    user = User(
+        email="nofreevm@test.com",
+        password_hash=hash_password("password123"),
+        is_active=True,
+        activation_key="key-without-free-vms-12345",
+        activation_key_expires=datetime.now(UTC) + timedelta(days=1),
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    response = client.post(
+        "/api/activate-key",
+        json={"activation_key": "key-without-free-vms-12345"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "All proxies are busy"
+
+    db_session.refresh(user)
+    assert user.activation_key == "key-without-free-vms-12345"
